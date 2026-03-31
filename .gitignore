@@ -1,0 +1,17 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Log files
+*.log
+
+# macOS
+.DS_Store
+
+# Personal config（不上传个人 API Key 和 plist）
+*.plist
+
+# Backup / scratch files
+*_original.py
+*_backup.py

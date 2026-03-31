@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Code Token Monitor</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --bg2: #111118;
+    --bg3: #1a1a24;
+    --card: #16161f;
+    --card2: #1e1e2a;
+    --border: #2a2a3a;
+    --accent: #7c3aed;
+    --accent2: #6d28d9;
+    --green: #10b981;
+    --blue: #3b82f6;
+    --orange: #f59e0b;
+    --red: #ef4444;
+    --pink: #ec4899;
+    --text: #e2e8f0;
+    --text2: #94a3b8;
+    --text3: #64748b;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    padding: 24px;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .logo {
+    width: 44px; height: 44px;
+    background: linear-gradient(135deg, var(--accent), #ec4899);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+  }
+  .title { font-size: 20px; font-weight: 700; }
+  .subtitle { font-size: 13px; color: var(--text3); margin-top: 2px; }
+  .status-dot {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; color: var(--text2);
+  }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--green);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  #last-update { color: var(--text3); font-size: 12px; }
+
+  /* Stats Grid */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s, border-color 0.2s;
+  }
+  .stat-card:hover { transform: translateY(-2px); border-color: var(--accent); }
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .stat-card.purple::before { background: linear-gradient(90deg, var(--accent), #ec4899); }
+  .stat-card.green::before { background: linear-gradient(90deg, var(--green), #06b6d4); }
+  .stat-card.blue::before { background: linear-gradient(90deg, var(--blue), #8b5cf6); }
+  .stat-card.orange::before { background: linear-gradient(90deg, var(--orange), var(--red)); }
+  .stat-card.pink::before { background: linear-gradient(90deg, var(--pink), var(--accent)); }
+
+  .stat-icon { font-size: 28px; margin-bottom: 12px; }
+  .stat-label { font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
+  .stat-value { font-size: 28px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+  .stat-sub { font-size: 12px; color: var(--text3); margin-top: 4px; }
+
+  /* Two column layout */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  /* Cards */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+  }
+  .card-title {
+    font-size: 14px; font-weight: 600;
+    color: var(--text2);
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-title .icon { font-size: 16px; }
+
+  /* Model Stats */
+  .model-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .model-row:last-child { border-bottom: none; }
+  .model-badge {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent);
+    white-space: nowrap;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .model-info { flex: 1; }
+  .model-bar-wrap { margin-top: 6px; background: var(--bg3); border-radius: 4px; height: 4px; overflow: hidden; }
+  .model-bar { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent), var(--pink)); transition: width 0.6s ease; }
+  .model-nums {
+    text-align: right;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text2);
+  }
+  .model-cost { font-size: 13px; color: var(--orange); font-weight: 600; }
+
+  /* Session Table */
+  .session-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .session-table th {
+    text-align: left;
+    color: var(--text3);
+    font-weight: 500;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    padding: 0 8px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .session-table td {
+    padding: 10px 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    vertical-align: middle;
+  }
+  .session-table tr:hover td { background: var(--bg3); }
+  .session-id {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text3);
+  }
+  .session-model {
+    background: rgba(124,58,237,0.15);
+    color: var(--accent);
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    display: inline-block;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .tok { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text2); }
+  .cost-val { color: var(--orange); font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+  .turns-badge {
+    background: var(--bg3);
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-size: 11px;
+    color: var(--text2);
+    display: inline-block;
+  }
+  .time-str { font-size: 11px; color: var(--text3); }
+
+  /* Bar Chart */
+  .chart-wrap { margin-top: 8px; }
+  .chart-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 100px;
+    padding-bottom: 2px;
+  }
+  .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; position: relative; }
+  .bar-in {
+    width: 100%;
+    min-height: 2px;
+    border-radius: 3px 3px 0 0;
+    background: linear-gradient(180deg, #7c3aed, #4c1d95);
+    transition: height 0.4s ease;
+    cursor: pointer;
+    position: relative;
+  }
+  .bar-out {
+    width: 100%;
+    min-height: 1px;
+    border-radius: 3px 3px 0 0;
+    background: linear-gradient(180deg, #10b981, #065f46);
+    transition: height 0.4s ease;
+  }
+  .bar-label { font-size: 9px; color: var(--text3); white-space: nowrap; }
+  .chart-legend {
+    display: flex; gap: 20px; justify-content: center;
+    margin-top: 12px; font-size: 12px; color: var(--text3);
+  }
+  .legend-dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; margin-right: 5px; }
+
+  /* Refresh button */
+  .refresh-btn {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: opacity 0.2s;
+  }
+  .refresh-btn:hover { opacity: 0.85; }
+
+  .empty { color: var(--text3); font-size: 13px; padding: 20px 0; text-align: center; }
+
+  /* Tooltip */
+  .bar-in:hover::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--card2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    white-space: nowrap;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  /* Number animation */
+  .count-up { transition: all 0.3s; }
+
+  /* Section label */
+  .section-label {
+    font-size: 11px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 14px;
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="logo">🤖</div>
+    <div>
+      <div class="title">Claude Code Monitor</div>
+      <div class="subtitle">Token 使用量实时监控</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:16px">
+    <span id="last-update">加载中...</span>
+    <div class="status-dot">
+      <div class="dot"></div>
+      实时监控
+    </div>
+    <button class="refresh-btn" onclick="loadStats()">🔄 刷新</button>
+  </div>
+</div>
+
+<!-- 汇总卡片 -->
+<div class="stats-grid" id="stats-grid">
+  <div class="stat-card purple">
+    <div class="stat-icon">📥</div>
+    <div class="stat-label">Input Tokens</div>
+    <div class="stat-value count-up" id="s-input">—</div>
+    <div class="stat-sub">包含缓存输入</div>
+  </div>
+  <div class="stat-card green">
+    <div class="stat-icon">📤</div>
+    <div class="stat-label">Output Tokens</div>
+    <div class="stat-value count-up" id="s-output">—</div>
+    <div class="stat-sub">生成内容</div>
+  </div>
+  <div class="stat-card blue">
+    <div class="stat-icon">⚡</div>
+    <div class="stat-label">Cache Read</div>
+    <div class="stat-value count-up" id="s-cache-read">—</div>
+    <div class="stat-sub">命中缓存（省钱）</div>
+  </div>
+  <div class="stat-card orange">
+    <div class="stat-icon">💰</div>
+    <div class="stat-label">预估费用</div>
+    <div class="stat-value count-up" id="s-cost">—</div>
+    <div class="stat-sub">CNY 人民币（估算）</div>
+  </div>
+  <div class="stat-card pink">
+    <div class="stat-icon">💬</div>
+    <div class="stat-label">总会话数</div>
+    <div class="stat-value count-up" id="s-sessions">—</div>
+    <div class="stat-sub">历史全部</div>
+  </div>
+</div>
+
+<!-- 图表 + 模型 -->
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title"><span class="icon">📊</span>近24小时用量趋势</div>
+    <div class="chart-wrap">
+      <div class="chart-bars" id="chart-bars">
+        <div class="empty">暂无数据</div>
+      </div>
+      <div class="chart-legend">
+        <span><span class="legend-dot" style="background:#7c3aed"></span>Input</span>
+        <span><span class="legend-dot" style="background:#10b981"></span>Output</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="icon">🧠</span>模型用量分布</div>
+    <div id="model-stats">
+      <div class="empty">加载中...</div>
+    </div>
+  </div>
+</div>
+
+<!-- 会话列表 -->
+<div class="card">
+  <div class="card-title"><span class="icon">🗂️</span>最近会话（最近20条）</div>
+  <div style="overflow-x:auto">
+    <table class="session-table">
+      <thead>
+        <tr>
+          <th>会话ID</th>
+          <th>模型</th>
+          <th>轮次</th>
+          <th>Input</th>
+          <th>Output</th>
+          <th>Cache读</th>
+          <th>预估费用</th>
+          <th>最后活跃</th>
+        </tr>
+      </thead>
+      <tbody id="session-tbody">
+        <tr><td colspan="8" class="empty">加载中...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+function fmt(n) {
+  if (n >= 1_000_000) return (n/1_000_000).toFixed(2) + 'M';
+  if (n >= 1_000) return (n/1_000).toFixed(1) + 'K';
+  return n.toString();
+}
+
+function timeAgo(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  const now = new Date();
+  const diff = (now - d) / 1000;
+  if (diff < 60) return '刚刚';
+  if (diff < 3600) return Math.floor(diff/60) + '分钟前';
+  if (diff < 86400) return Math.floor(diff/3600) + '小时前';
+  return Math.floor(diff/86400) + '天前';
+}
+
+function shortId(id) {
+  return id.substring(0, 8) + '...';
+}
+
+async function loadStats() {
+  try {
+    const res = await fetch('/api/stats');
+    const data = await res.json();
+
+    // 汇总
+    const t = data.total;
+    document.getElementById('s-input').textContent = fmt(t.input);
+    document.getElementById('s-output').textContent = fmt(t.output);
+    document.getElementById('s-cache-read').textContent = fmt(t.cache_read);
+    document.getElementById('s-cost').textContent = '¥' + t.cost.toFixed(4);
+    document.getElementById('s-sessions').textContent = t.sessions;
+    document.getElementById('last-update').textContent =
+      '更新: ' + new Date(data.updated_at).toLocaleTimeString('zh-CN');
+
+    // 小时图表
+    renderChart(data.hourly);
+
+    // 模型统计
+    renderModels(data.model_stats);
+
+    // 会话列表
+    renderSessions(data.sessions);
+
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+function renderChart(hourly) {
+  const el = document.getElementById('chart-bars');
+  if (!hourly || hourly.length === 0) {
+    el.innerHTML = '<div class="empty">暂无小时数据</div>';
+    return;
+  }
+  const maxIn = Math.max(...hourly.map(h => h.input), 1);
+  const maxOut = Math.max(...hourly.map(h => h.output), 1);
+  const maxAll = Math.max(maxIn, maxOut, 1);
+
+  el.innerHTML = hourly.map(h => {
+    const hIn = Math.max(Math.round((h.input / maxAll) * 90), 2);
+    const hOut = Math.max(Math.round((h.output / maxAll) * 90), 1);
+    const label = h.hour.split(' ')[1] || h.hour;
+    const tip = `${label}\nInput: ${fmt(h.input)}\nOutput: ${fmt(h.output)}`;
+    return `
+      <div class="bar-col">
+        <div style="display:flex;align-items:flex-end;gap:1px;height:96px">
+          <div class="bar-in" style="height:${hIn}px;flex:1" data-tip="${tip}"></div>
+          <div class="bar-out" style="height:${hOut}px;flex:1"></div>
+        </div>
+        <div class="bar-label">${label}</div>
+      </div>`;
+  }).join('');
+}
+
+function renderModels(stats) {
+  const el = document.getElementById('model-stats');
+  if (!stats || Object.keys(stats).length === 0) {
+    el.innerHTML = '<div class="empty">暂无模型数据</div>';
+    return;
+  }
+  const entries = Object.entries(stats).sort((a,b) => b[1].input - a[1].input);
+  const maxIn = Math.max(...entries.map(e => e[1].input), 1);
+
+  el.innerHTML = entries.map(([model, s]) => {
+    const pct = Math.round((s.input / maxIn) * 100);
+    return `
+      <div class="model-row">
+        <div>
+          <div class="model-badge" title="${model}">${model}</div>
+        </div>
+        <div class="model-info">
+          <div style="font-size:11px;color:var(--text3)">${s.turns} 轮 · in:${fmt(s.input)} out:${fmt(s.output)}</div>
+          <div class="model-bar-wrap"><div class="model-bar" style="width:${pct}%"></div></div>
+        </div>
+        <div class="model-nums">
+          <div class="model-cost">¥${s.cost.toFixed(4)}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function renderSessions(sessions) {
+  const tbody = document.getElementById('session-tbody');
+  if (!sessions || sessions.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" class="empty">暂无会话数据</td></tr>';
+    return;
+  }
+  tbody.innerHTML = sessions.map(s => `
+    <tr>
+      <td><span class="session-id" title="${s.id}">${shortId(s.id)}</span></td>
+      <td><span class="session-model" title="${s.model}">${s.model}</span></td>
+      <td><span class="turns-badge">${s.turns}</span></td>
+      <td><span class="tok">${fmt(s.input)}</span></td>
+      <td><span class="tok">${fmt(s.output)}</span></td>
+      <td><span class="tok">${fmt(s.cache_read)}</span></td>
+      <td><span class="cost-val">¥${s.cost.toFixed(4)}</span></td>
+      <td><span class="time-str">${timeAgo(s.last)}</span></td>
+    </tr>
+  `).join('');
+}
+
+// 首次加载 + 每30s自动刷新
+loadStats();
+setInterval(loadStats, 30000);
+</script>
+</body>
+</html>
