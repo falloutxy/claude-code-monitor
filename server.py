@@ -12,29 +12,60 @@ PROJECTS_DIR = os.path.expanduser("~/.claude/projects")
 
 def parse_cost(input_tokens, output_tokens, cache_creation, cache_read, model):
     """
-    估算费用（人民币）
-    - MiniMax  : Coding Plan 已付费订阅，按 token 计费 = ¥0
-    - qwen3-coder-plus : 官方价 ≤32K 输入¥4/M 输出¥16/M（取≤32K档作简化估算）
-    - qwen3-max        : 官方价 ≤32K 输入¥2.5/M 输出¥10/M
-    - qwq-plus         : 同 qwen3-coder-plus 价位
-    - 其余未知模型      : 输入¥1/M 输出¥4/M（保守估算）
+    估算费用（人民币）· 价格数据来源：阿里云百炼官方，2026-04
+
+    本地 Ollama 模型（免费）：
+      - qwen-opus, qwen-opus-fast, qwopus-9b, deepseek-r1 等 = ¥0
+
+    MiniMax（Coding Plan 包月）：
+      - MiniMax-M2.7 = ¥0
+
+    阿里百炼（≤32K Token 档，实时推理，CNY/百万Token）：
+      - qwen3.6-plus        : 输入¥2/M   输出¥8/M
+      - qwen3-max           : 输入¥2.5/M 输出¥10/M
+      - qwen3-coder-plus    : 输入¥4/M   输出¥16/M
+      - qwen3.5-plus        : 输入¥0.8/M 输出¥3.2/M
+      - qwen3.5-omni-plus   : 输入¥0.8/M 输出¥3.2/M（参考 qwen3.5-plus 档位）
+      - qwq-plus            : 输入¥4/M   输出¥16/M
+      - kimi-k2.5           : 输入¥2/M   输出¥8/M
+      - 其余未知模型         : 输入¥1/M   输出¥4/M（保守估算）
+
+    注：>32K Token 时百炼单价会上涨，此处取 ≤32K 档简化估算。
     """
     model_lower = (model or "").lower()
-    if "minimax" in model_lower:
-        # Coding Plan 已包月，不额外计费
+
+    # 本地 Ollama 模型：完全免费
+    OLLAMA_FREE = ["qwen-opus", "qwopus", "deepseek-r1", "deepseek-v3",
+                   "gemini-3", "gpt-oss", "qwen3-vl"]
+    if any(kw in model_lower for kw in OLLAMA_FREE):
         return 0.0
-    elif "qwen3-coder-plus" in model_lower:
-        input_price  = 4.0  / 1_000_000   # ¥4/M
-        output_price = 16.0 / 1_000_000   # ¥16/M
+
+    # MiniMax Coding Plan：包月免费
+    if "minimax" in model_lower:
+        return 0.0
+
+    # 阿里百炼：按官方价格计算
+    if "qwen3.6-plus" in model_lower:
+        input_price  = 2.0  / 1_000_000
+        output_price = 8.0  / 1_000_000
     elif "qwen3-max" in model_lower:
-        input_price  = 2.5  / 1_000_000   # ¥2.5/M
-        output_price = 10.0 / 1_000_000   # ¥10/M
+        input_price  = 2.5  / 1_000_000
+        output_price = 10.0 / 1_000_000
+    elif "qwen3-coder-plus" in model_lower:
+        input_price  = 4.0  / 1_000_000
+        output_price = 16.0 / 1_000_000
+    elif "qwen3.5-omni" in model_lower:
+        input_price  = 0.8  / 1_000_000
+        output_price = 3.2  / 1_000_000
+    elif "qwen3.5-plus" in model_lower or "qwen-plus" in model_lower:
+        input_price  = 0.8  / 1_000_000
+        output_price = 3.2  / 1_000_000
     elif "qwq" in model_lower:
         input_price  = 4.0  / 1_000_000
         output_price = 16.0 / 1_000_000
-    elif "qwen3.5-plus" in model_lower or "qwen-plus" in model_lower:
-        input_price  = 0.8  / 1_000_000   # ¥0.8/M
-        output_price = 3.2  / 1_000_000   # ¥3.2/M
+    elif "kimi" in model_lower:
+        input_price  = 2.0  / 1_000_000
+        output_price = 8.0  / 1_000_000
     else:
         input_price  = 1.0  / 1_000_000
         output_price = 4.0  / 1_000_000
@@ -115,7 +146,6 @@ def load_all_sessions():
                         if model != "unknown":
                             session_model = model
 
-                        # 统计每小时用量
                         if ts:
                             hour_key = ts.strftime("%Y-%m-%d %H:00")
                             if hour_key not in hourly:
@@ -124,7 +154,6 @@ def load_all_sessions():
                             hourly[hour_key]["output"] += out
                             hourly[hour_key]["cost"] += cost
 
-                        # 统计模型
                         if model not in model_stats:
                             model_stats[model] = {"input": 0, "output": 0, "cost": 0.0, "turns": 0}
                         model_stats[model]["input"] += inp
@@ -162,12 +191,11 @@ def load_all_sessions():
                 "cost": round(session_cost, 6),
                 "start": session_start.isoformat() if session_start else "",
                 "last": session_last.isoformat() if session_last else "",
-                "messages": messages[-5:],  # 最近5条
+                "messages": messages[-5:],
             })
 
     sessions.sort(key=lambda x: x.get("last", ""), reverse=True)
 
-    # 最近24小时按小时数据
     sorted_hours = sorted(hourly.keys())[-24:]
     hourly_data = [{"hour": h, **hourly[h]} for h in sorted_hours]
 
@@ -179,7 +207,7 @@ def load_all_sessions():
             "cache_read": total_cache_read,
             "cost": round(total_cost, 4),
             "sessions": len(sessions),
-            "currency": "CNY",   # 人民币
+            "currency": "CNY",
         },
         "model_stats": model_stats,
         "sessions": sessions[:20],
@@ -190,7 +218,7 @@ def load_all_sessions():
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
-        pass  # 静默日志
+        pass
 
     def do_GET(self):
         if self.path == "/api/stats":
