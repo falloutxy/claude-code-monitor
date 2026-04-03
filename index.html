@@ -3,507 +3,326 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Claude Code Token Monitor</title>
+<title>Claude Code Monitor</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+:root {
+  --bg:#0a0a0f;--bg2:#111118;--bg3:#1a1a24;--card:#16161f;--card2:#1e1e2a;
+  --border:#2a2a3a;--accent:#7c3aed;--accent2:#6d28d9;--green:#10b981;
+  --blue:#3b82f6;--orange:#f59e0b;--red:#ef4444;--pink:#ec4899;
+  --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;padding:24px;}
 
-  :root {
-    --bg: #0a0a0f;
-    --bg2: #111118;
-    --bg3: #1a1a24;
-    --card: #16161f;
-    --card2: #1e1e2a;
-    --border: #2a2a3a;
-    --accent: #7c3aed;
-    --accent2: #6d28d9;
-    --green: #10b981;
-    --blue: #3b82f6;
-    --orange: #f59e0b;
-    --red: #ef4444;
-    --pink: #ec4899;
-    --text: #e2e8f0;
-    --text2: #94a3b8;
-    --text3: #64748b;
-  }
+/* Header */
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border);}
+.header-left{display:flex;align-items:center;gap:14px;}
+.logo{width:44px;height:44px;background:linear-gradient(135deg,var(--accent),#ec4899);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;}
+.title{font-size:20px;font-weight:700;}
+.subtitle{font-size:13px;color:var(--text3);margin-top:2px;}
+.status-dot{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+#last-update{color:var(--text3);font-size:12px;}
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Inter', sans-serif;
-    min-height: 100vh;
-    padding: 24px;
-  }
+/* Tabs */
+.tabs{display:flex;gap:4px;margin-bottom:24px;background:var(--card);padding:4px;border-radius:12px;border:1px solid var(--border);width:fit-content;}
+.tab-btn{padding:8px 20px;border-radius:8px;border:none;background:transparent;color:var(--text2);font-size:13px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s;}
+.tab-btn.active{background:var(--accent);color:#fff;}
+.tab-btn:hover:not(.active){color:var(--text);background:var(--bg3);}
+.tab-pane{display:none;}
+.tab-pane.active{display:block;}
 
-  /* Header */
-  .header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 28px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid var(--border);
-  }
-  .header-left { display: flex; align-items: center; gap: 14px; }
-  .logo {
-    width: 44px; height: 44px;
-    background: linear-gradient(135deg, var(--accent), #ec4899);
-    border-radius: 12px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 22px;
-  }
-  .title { font-size: 20px; font-weight: 700; }
-  .subtitle { font-size: 13px; color: var(--text3); margin-top: 2px; }
-  .status-dot {
-    display: flex; align-items: center; gap: 8px;
-    font-size: 13px; color: var(--text2);
-  }
-  .dot {
-    width: 8px; height: 8px; border-radius: 50%;
-    background: var(--green);
-    animation: pulse 2s infinite;
-  }
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
-  }
-  #last-update { color: var(--text3); font-size: 12px; }
+/* Stats Grid */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px;}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;position:relative;overflow:hidden;transition:transform .2s,border-color .2s;}
+.stat-card:hover{transform:translateY(-2px);border-color:var(--accent);}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.stat-card.purple::before{background:linear-gradient(90deg,var(--accent),#ec4899);}
+.stat-card.green::before{background:linear-gradient(90deg,var(--green),#06b6d4);}
+.stat-card.blue::before{background:linear-gradient(90deg,var(--blue),#8b5cf6);}
+.stat-card.orange::before{background:linear-gradient(90deg,var(--orange),var(--red));}
+.stat-card.pink::before{background:linear-gradient(90deg,var(--pink),var(--accent));}
+.stat-icon{font-size:28px;margin-bottom:12px;}
+.stat-label{font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;}
+.stat-value{font-size:28px;font-weight:700;font-family:'JetBrains Mono',monospace;}
+.stat-sub{font-size:12px;color:var(--text3);margin-top:4px;}
 
-  /* Stats Grid */
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
-    margin-bottom: 24px;
-  }
-  .stat-card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 20px;
-    position: relative;
-    overflow: hidden;
-    transition: transform 0.2s, border-color 0.2s;
-  }
-  .stat-card:hover { transform: translateY(-2px); border-color: var(--accent); }
-  .stat-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-  }
-  .stat-card.purple::before { background: linear-gradient(90deg, var(--accent), #ec4899); }
-  .stat-card.green::before { background: linear-gradient(90deg, var(--green), #06b6d4); }
-  .stat-card.blue::before { background: linear-gradient(90deg, var(--blue), #8b5cf6); }
-  .stat-card.orange::before { background: linear-gradient(90deg, var(--orange), var(--red)); }
-  .stat-card.pink::before { background: linear-gradient(90deg, var(--pink), var(--accent)); }
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;}
+@media(max-width:900px){.grid-2{grid-template-columns:1fr;}}
 
-  .stat-icon { font-size: 28px; margin-bottom: 12px; }
-  .stat-label { font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
-  .stat-value { font-size: 28px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
-  .stat-sub { font-size: 12px; color: var(--text3); margin-top: 4px; }
+/* Card */
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:16px;}
+.card-title{font-size:14px;font-weight:600;color:var(--text2);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
 
-  /* Two column layout */
-  .grid-2 {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 24px;
-  }
-  @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+/* Model stats */
+.model-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);}
+.model-row:last-child{border-bottom:none;}
+.model-badge{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--accent);white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis;}
+.model-info{flex:1;}
+.model-bar-wrap{margin-top:6px;background:var(--bg3);border-radius:4px;height:4px;overflow:hidden;}
+.model-bar{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--accent),var(--pink));transition:width .6s ease;}
+.model-nums{text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text2);}
+.model-cost{font-size:13px;color:var(--orange);font-weight:600;}
 
-  /* Cards */
-  .card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 20px;
-  }
-  .card-title {
-    font-size: 14px; font-weight: 600;
-    color: var(--text2);
-    margin-bottom: 16px;
-    display: flex; align-items: center; gap: 8px;
-  }
-  .card-title .icon { font-size: 16px; }
+/* Session table */
+.session-table{width:100%;border-collapse:collapse;font-size:13px;}
+.session-table th{text-align:left;color:var(--text3);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.6px;padding:0 8px 10px;border-bottom:1px solid var(--border);}
+.session-table td{padding:10px 8px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle;}
+.session-table tr:hover td{background:var(--bg3);}
+.session-id{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);}
+.session-model{background:rgba(124,58,237,.15);color:var(--accent);border-radius:6px;padding:2px 8px;font-size:11px;font-family:'JetBrains Mono',monospace;display:inline-block;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tok{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text2);}
+.cost-val{color:var(--orange);font-weight:600;font-family:'JetBrains Mono',monospace;}
+.turns-badge{background:var(--bg3);border-radius:6px;padding:2px 8px;font-size:11px;color:var(--text2);display:inline-block;}
+.time-str{font-size:11px;color:var(--text3);}
 
-  /* Model Stats */
-  .model-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 0;
-    border-bottom: 1px solid var(--border);
-  }
-  .model-row:last-child { border-bottom: none; }
-  .model-badge {
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 4px 10px;
-    font-size: 11px;
-    font-family: 'JetBrains Mono', monospace;
-    color: var(--accent);
-    white-space: nowrap;
-    max-width: 160px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .model-info { flex: 1; }
-  .model-bar-wrap { margin-top: 6px; background: var(--bg3); border-radius: 4px; height: 4px; overflow: hidden; }
-  .model-bar { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent), var(--pink)); transition: width 0.6s ease; }
-  .model-nums {
-    text-align: right;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 12px;
-    color: var(--text2);
-  }
-  .model-cost { font-size: 13px; color: var(--orange); font-weight: 600; }
+/* Chart */
+.chart-bars{display:flex;align-items:flex-end;gap:3px;height:100px;padding-bottom:2px;}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;position:relative;}
+.bar-in{width:100%;min-height:2px;border-radius:3px 3px 0 0;background:linear-gradient(180deg,#7c3aed,#4c1d95);transition:height .4s ease;cursor:pointer;}
+.bar-out{width:100%;min-height:1px;border-radius:3px 3px 0 0;background:linear-gradient(180deg,#10b981,#065f46);transition:height .4s ease;}
+.bar-label{font-size:9px;color:var(--text3);white-space:nowrap;}
+.chart-legend{display:flex;gap:20px;justify-content:center;margin-top:12px;font-size:12px;color:var(--text3);}
+.legend-dot{width:10px;height:10px;border-radius:2px;display:inline-block;margin-right:5px;}
+.bar-in:hover::after{content:attr(data-tip);position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:11px;padding:4px 8px;border-radius:6px;white-space:nowrap;z-index:10;pointer-events:none;}
 
-  /* Session Table */
-  .session-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  .session-table th {
-    text-align: left;
-    color: var(--text3);
-    font-weight: 500;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
-    padding: 0 8px 10px;
-    border-bottom: 1px solid var(--border);
-  }
-  .session-table td {
-    padding: 10px 8px;
-    border-bottom: 1px solid rgba(255,255,255,0.04);
-    vertical-align: middle;
-  }
-  .session-table tr:hover td { background: var(--bg3); }
-  .session-id {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    color: var(--text3);
-  }
-  .session-model {
-    background: rgba(124,58,237,0.15);
-    color: var(--accent);
-    border-radius: 6px;
-    padding: 2px 8px;
-    font-size: 11px;
-    font-family: 'JetBrains Mono', monospace;
-    display: inline-block;
-    max-width: 140px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .tok { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text2); }
-  .cost-val { color: var(--orange); font-weight: 600; font-family: 'JetBrains Mono', monospace; }
-  .turns-badge {
-    background: var(--bg3);
-    border-radius: 6px;
-    padding: 2px 8px;
-    font-size: 11px;
-    color: var(--text2);
-    display: inline-block;
-  }
-  .time-str { font-size: 11px; color: var(--text3); }
+/* Buttons */
+.btn{border:none;border-radius:10px;padding:8px 16px;font-size:13px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;transition:opacity .2s;}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;}
+.btn-primary:hover{opacity:.85;}
+.btn-danger{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3);}
+.btn-danger:hover{background:rgba(239,68,68,.25);}
+.btn-sm{padding:5px 12px;font-size:12px;}
+.btn-toggle{background:rgba(16,185,129,.15);color:var(--green);border:1px solid rgba(16,185,129,.3);}
+.btn-toggle.disabled{background:rgba(100,116,139,.15);color:var(--text3);border:1px solid var(--border);}
 
-  /* Bar Chart */
-  .chart-wrap { margin-top: 8px; }
-  .chart-bars {
-    display: flex;
-    align-items: flex-end;
-    gap: 3px;
-    height: 100px;
-    padding-bottom: 2px;
-  }
-  .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; position: relative; }
-  .bar-in {
-    width: 100%;
-    min-height: 2px;
-    border-radius: 3px 3px 0 0;
-    background: linear-gradient(180deg, #7c3aed, #4c1d95);
-    transition: height 0.4s ease;
-    cursor: pointer;
-    position: relative;
-  }
-  .bar-out {
-    width: 100%;
-    min-height: 1px;
-    border-radius: 3px 3px 0 0;
-    background: linear-gradient(180deg, #10b981, #065f46);
-    transition: height 0.4s ease;
-  }
-  .bar-label { font-size: 9px; color: var(--text3); white-space: nowrap; }
-  .chart-legend {
-    display: flex; gap: 20px; justify-content: center;
-    margin-top: 12px; font-size: 12px; color: var(--text3);
-  }
-  .legend-dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; margin-right: 5px; }
+/* MCP */
+.mcp-grid{display:grid;gap:12px;}
+.mcp-card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:16px;display:flex;align-items:center;gap:16px;transition:border-color .2s;}
+.mcp-card:hover{border-color:var(--accent);}
+.mcp-card.is-disabled{opacity:.5;}
+.mcp-icon{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--pink));display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.mcp-info{flex:1;min-width:0;}
+.mcp-name{font-weight:600;font-size:14px;margin-bottom:4px;}
+.mcp-cmd{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.mcp-actions{display:flex;gap:8px;flex-shrink:0;}
+.mcp-status{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:500;}
+.mcp-status.on{background:rgba(16,185,129,.15);color:var(--green);}
+.mcp-status.off{background:rgba(100,116,139,.15);color:var(--text3);}
 
-  /* Refresh button */
-  .refresh-btn {
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    color: white;
-    border: none;
-    border-radius: 10px;
-    padding: 8px 16px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    font-family: 'Inter', sans-serif;
-    transition: opacity 0.2s;
-  }
-  .refresh-btn:hover { opacity: 0.85; }
+/* Presets */
+.preset-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:20px;}
+.preset-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px;cursor:pointer;transition:all .2s;}
+.preset-card:hover{border-color:var(--accent);background:rgba(124,58,237,.08);}
+.preset-name{font-size:13px;font-weight:600;margin-bottom:4px;}
+.preset-desc{font-size:11px;color:var(--text3);}
 
-  .empty { color: var(--text3); font-size: 13px; padding: 20px 0; text-align: center; }
+/* Form */
+.form-group{margin-bottom:14px;}
+.form-label{display:block;font-size:12px;color:var(--text2);margin-bottom:6px;}
+.form-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px;font-family:'Inter',sans-serif;outline:none;transition:border-color .2s;}
+.form-input:focus{border-color:var(--accent);}
+.form-hint{font-size:11px;color:var(--text3);margin-top:4px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.form-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px;}
 
-  /* Tooltip */
-  .bar-in:hover::after {
-    content: attr(data-tip);
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--card2);
-    border: 1px solid var(--border);
-    color: var(--text);
-    font-size: 11px;
-    padding: 4px 8px;
-    border-radius: 6px;
-    white-space: nowrap;
-    z-index: 10;
-    pointer-events: none;
-  }
+/* Alert */
+.alert{padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:14px;display:none;}
+.alert.show{display:block;}
+.alert-success{background:rgba(16,185,129,.15);color:var(--green);border:1px solid rgba(16,185,129,.3);}
+.alert-error{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3);}
 
-  /* Number animation */
-  .count-up { transition: all 0.3s; }
-
-  /* Section label */
-  .section-label {
-    font-size: 11px;
-    color: var(--text3);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 14px;
-    margin-top: 8px;
-  }
+.empty{color:var(--text3);font-size:13px;padding:20px 0;text-align:center;}
 </style>
 </head>
 <body>
-
 <div class="header">
   <div class="header-left">
     <div class="logo">🤖</div>
     <div>
       <div class="title">Claude Code Monitor</div>
-      <div class="subtitle">Token 使用量实时监控</div>
+      <div class="subtitle">Token 监控 · MCP 管理</div>
     </div>
   </div>
   <div style="display:flex;align-items:center;gap:16px">
     <span id="last-update">加载中...</span>
-    <div class="status-dot">
-      <div class="dot"></div>
-      实时监控
-    </div>
-    <button class="refresh-btn" onclick="loadStats()">🔄 刷新</button>
+    <div class="status-dot"><div class="dot"></div>实时</div>
+    <button class="btn btn-primary" onclick="loadStats()">🔄 刷新</button>
   </div>
 </div>
 
-<!-- 汇总卡片 -->
-<div class="stats-grid" id="stats-grid">
-  <div class="stat-card purple">
-    <div class="stat-icon">📥</div>
-    <div class="stat-label">Input Tokens</div>
-    <div class="stat-value count-up" id="s-input">—</div>
-    <div class="stat-sub">包含缓存输入</div>
-  </div>
-  <div class="stat-card green">
-    <div class="stat-icon">📤</div>
-    <div class="stat-label">Output Tokens</div>
-    <div class="stat-value count-up" id="s-output">—</div>
-    <div class="stat-sub">生成内容</div>
-  </div>
-  <div class="stat-card blue">
-    <div class="stat-icon">⚡</div>
-    <div class="stat-label">Cache Read</div>
-    <div class="stat-value count-up" id="s-cache-read">—</div>
-    <div class="stat-sub">命中缓存（省钱）</div>
-  </div>
-  <div class="stat-card orange">
-    <div class="stat-icon">💰</div>
-    <div class="stat-label">预估费用</div>
-    <div class="stat-value count-up" id="s-cost">—</div>
-    <div class="stat-sub">CNY 人民币（估算）</div>
-  </div>
-  <div class="stat-card pink">
-    <div class="stat-icon">💬</div>
-    <div class="stat-label">总会话数</div>
-    <div class="stat-value count-up" id="s-sessions">—</div>
-    <div class="stat-sub">历史全部</div>
-  </div>
+<!-- Tabs -->
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('stats',this)">📊 Token 监控</button>
+  <button class="tab-btn" onclick="switchTab('mcp',this)">🔌 MCP 管理</button>
 </div>
 
-<!-- 图表 + 模型 -->
-<div class="grid-2">
-  <div class="card">
-    <div class="card-title"><span class="icon">📊</span>近24小时用量趋势</div>
-    <div class="chart-wrap">
-      <div class="chart-bars" id="chart-bars">
-        <div class="empty">暂无数据</div>
-      </div>
+<!-- ===== Tab: Stats ===== -->
+<div id="tab-stats" class="tab-pane active">
+  <div class="stats-grid">
+    <div class="stat-card purple"><div class="stat-icon">📥</div><div class="stat-label">Input Tokens</div><div class="stat-value" id="s-input">—</div><div class="stat-sub">包含缓存输入</div></div>
+    <div class="stat-card green"><div class="stat-icon">📤</div><div class="stat-label">Output Tokens</div><div class="stat-value" id="s-output">—</div><div class="stat-sub">生成内容</div></div>
+    <div class="stat-card blue"><div class="stat-icon">⚡</div><div class="stat-label">Cache Read</div><div class="stat-value" id="s-cache-read">—</div><div class="stat-sub">命中缓存（省钱）</div></div>
+    <div class="stat-card orange"><div class="stat-icon">💰</div><div class="stat-label">预估费用</div><div class="stat-value" id="s-cost">—</div><div class="stat-sub">CNY 人民币（估算）</div></div>
+    <div class="stat-card pink"><div class="stat-icon">💬</div><div class="stat-label">总会话数</div><div class="stat-value" id="s-sessions">—</div><div class="stat-sub">历史全部</div></div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title"><span>📊</span>近24小时用量趋势</div>
+      <div class="chart-bars" id="chart-bars"><div class="empty">暂无数据</div></div>
       <div class="chart-legend">
         <span><span class="legend-dot" style="background:#7c3aed"></span>Input</span>
         <span><span class="legend-dot" style="background:#10b981"></span>Output</span>
       </div>
     </div>
+    <div class="card">
+      <div class="card-title"><span>🧠</span>模型用量分布</div>
+      <div id="model-stats"><div class="empty">加载中...</div></div>
+    </div>
   </div>
 
   <div class="card">
-    <div class="card-title"><span class="icon">🧠</span>模型用量分布</div>
-    <div id="model-stats">
-      <div class="empty">加载中...</div>
+    <div class="card-title"><span>🗂️</span>最近会话（最近20条）</div>
+    <div style="overflow-x:auto">
+      <table class="session-table">
+        <thead><tr>
+          <th>会话ID</th><th>模型</th><th>轮次</th>
+          <th>Input</th><th>Output</th><th>Cache读</th>
+          <th>预估费用</th><th>最后活跃</th>
+        </tr></thead>
+        <tbody id="session-tbody"><tr><td colspan="8" class="empty">加载中...</td></tr></tbody>
+      </table>
     </div>
   </div>
 </div>
 
-<!-- 会话列表 -->
-<div class="card">
-  <div class="card-title"><span class="icon">🗂️</span>最近会话（最近20条）</div>
-  <div style="overflow-x:auto">
-    <table class="session-table">
-      <thead>
-        <tr>
-          <th>会话ID</th>
-          <th>模型</th>
-          <th>轮次</th>
-          <th>Input</th>
-          <th>Output</th>
-          <th>Cache读</th>
-          <th>预估费用</th>
-          <th>最后活跃</th>
-        </tr>
-      </thead>
-      <tbody id="session-tbody">
-        <tr><td colspan="8" class="empty">加载中...</td></tr>
-      </tbody>
-    </table>
+<!-- ===== Tab: MCP ===== -->
+<div id="tab-mcp" class="tab-pane">
+
+  <!-- 已安装 -->
+  <div class="card">
+    <div class="card-title" style="justify-content:space-between">
+      <span><span>🔌</span> 已配置的 MCP Server</span>
+      <button class="btn btn-sm" style="background:var(--bg3);color:var(--text2);border:1px solid var(--border)" onclick="loadMcp()">↻ 刷新</button>
+    </div>
+    <div id="mcp-alert" class="alert"></div>
+    <div id="mcp-list"><div class="empty">加载中...</div></div>
+  </div>
+
+  <!-- 快速预设 -->
+  <div class="card">
+    <div class="card-title"><span>⚡</span> 常用预设（点击填入）</div>
+    <div class="preset-grid" id="preset-grid"></div>
+  </div>
+
+  <!-- 添加表单 -->
+  <div class="card">
+    <div class="card-title"><span>➕</span> 添加 MCP Server</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">名称 *</label>
+        <input class="form-input" id="f-name" placeholder="filesystem" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">命令 *</label>
+        <input class="form-input" id="f-cmd" placeholder="npx" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">参数 (每行一个 arg)</label>
+      <textarea class="form-input" id="f-args" rows="3" placeholder="-y&#10;@modelcontextprotocol/server-filesystem&#10;/Users/yaoge"></textarea>
+      <div class="form-hint">一行一个参数，对应 args 数组</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">环境变量（JSON，可选）</label>
+      <input class="form-input" id="f-env" placeholder='{"GITHUB_TOKEN":"ghp_xxx"}' />
+    </div>
+    <div class="form-actions">
+      <button class="btn" style="background:var(--bg3);color:var(--text2);border:1px solid var(--border)" onclick="clearForm()">清空</button>
+      <button class="btn btn-primary" onclick="addMcp()">添加 Server</button>
+    </div>
   </div>
 </div>
 
 <script>
+// ── Tab 切换 ──────────────────────────────
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'mcp') loadMcp();
+}
+
+// ── 工具函数 ──────────────────────────────
 function fmt(n) {
-  if (n >= 1_000_000) return (n/1_000_000).toFixed(2) + 'M';
-  if (n >= 1_000) return (n/1_000).toFixed(1) + 'K';
+  if (n >= 1e6) return (n/1e6).toFixed(2)+'M';
+  if (n >= 1e3) return (n/1e3).toFixed(1)+'K';
   return n.toString();
 }
-
 function timeAgo(iso) {
   if (!iso) return '—';
-  const d = new Date(iso);
-  const now = new Date();
-  const diff = (now - d) / 1000;
-  if (diff < 60) return '刚刚';
-  if (diff < 3600) return Math.floor(diff/60) + '分钟前';
-  if (diff < 86400) return Math.floor(diff/3600) + '小时前';
-  return Math.floor(diff/86400) + '天前';
+  const d = new Date(iso), diff = (Date.now()-d)/1000;
+  if (diff<60) return '刚刚';
+  if (diff<3600) return Math.floor(diff/60)+'分钟前';
+  if (diff<86400) return Math.floor(diff/3600)+'小时前';
+  return Math.floor(diff/86400)+'天前';
 }
 
-function shortId(id) {
-  return id.substring(0, 8) + '...';
-}
-
+// ── Token 统计 ────────────────────────────
 async function loadStats() {
   try {
-    const res = await fetch('/api/stats');
-    const data = await res.json();
-
-    // 汇总
-    const t = data.total;
+    const r = await fetch('/api/stats'), data = await r.json(), t = data.total;
     document.getElementById('s-input').textContent = fmt(t.input);
     document.getElementById('s-output').textContent = fmt(t.output);
     document.getElementById('s-cache-read').textContent = fmt(t.cache_read);
-    document.getElementById('s-cost').textContent = '¥' + t.cost.toFixed(4);
+    document.getElementById('s-cost').textContent = '¥'+t.cost.toFixed(4);
     document.getElementById('s-sessions').textContent = t.sessions;
-    document.getElementById('last-update').textContent =
-      '更新: ' + new Date(data.updated_at).toLocaleTimeString('zh-CN');
-
-    // 小时图表
+    document.getElementById('last-update').textContent = '更新: '+new Date(data.updated_at).toLocaleTimeString('zh-CN');
     renderChart(data.hourly);
-
-    // 模型统计
     renderModels(data.model_stats);
-
-    // 会话列表
     renderSessions(data.sessions);
-
-  } catch(e) {
-    console.error(e);
-  }
+  } catch(e) { console.error(e); }
 }
-
 function renderChart(hourly) {
   const el = document.getElementById('chart-bars');
-  if (!hourly || hourly.length === 0) {
-    el.innerHTML = '<div class="empty">暂无小时数据</div>';
-    return;
-  }
-  const maxIn = Math.max(...hourly.map(h => h.input), 1);
-  const maxOut = Math.max(...hourly.map(h => h.output), 1);
-  const maxAll = Math.max(maxIn, maxOut, 1);
-
-  el.innerHTML = hourly.map(h => {
-    const hIn = Math.max(Math.round((h.input / maxAll) * 90), 2);
-    const hOut = Math.max(Math.round((h.output / maxAll) * 90), 1);
-    const label = h.hour.split(' ')[1] || h.hour;
-    const tip = `${label}\nInput: ${fmt(h.input)}\nOutput: ${fmt(h.output)}`;
-    return `
-      <div class="bar-col">
-        <div style="display:flex;align-items:flex-end;gap:1px;height:96px">
-          <div class="bar-in" style="height:${hIn}px;flex:1" data-tip="${tip}"></div>
-          <div class="bar-out" style="height:${hOut}px;flex:1"></div>
-        </div>
-        <div class="bar-label">${label}</div>
-      </div>`;
+  if (!hourly||!hourly.length) { el.innerHTML='<div class="empty">暂无数据</div>'; return; }
+  const maxAll = Math.max(...hourly.map(h=>Math.max(h.input,h.output)),1);
+  el.innerHTML = hourly.map(h=>{
+    const hI=Math.max(Math.round(h.input/maxAll*90),2), hO=Math.max(Math.round(h.output/maxAll*90),1);
+    const label=h.hour.split(' ')[1]||h.hour;
+    return `<div class="bar-col">
+      <div style="display:flex;align-items:flex-end;gap:1px;height:96px">
+        <div class="bar-in" style="height:${hI}px;flex:1" data-tip="${label} In:${fmt(h.input)}"></div>
+        <div class="bar-out" style="height:${hO}px;flex:1"></div>
+      </div>
+      <div class="bar-label">${label}</div></div>`;
   }).join('');
 }
-
 function renderModels(stats) {
   const el = document.getElementById('model-stats');
-  if (!stats || Object.keys(stats).length === 0) {
-    el.innerHTML = '<div class="empty">暂无模型数据</div>';
-    return;
-  }
-  const entries = Object.entries(stats).sort((a,b) => b[1].input - a[1].input);
-  const maxIn = Math.max(...entries.map(e => e[1].input), 1);
-
-  el.innerHTML = entries.map(([model, s]) => {
-    const pct = Math.round((s.input / maxIn) * 100);
-    return `
-      <div class="model-row">
-        <div>
-          <div class="model-badge" title="${model}">${model}</div>
-        </div>
-        <div class="model-info">
-          <div style="font-size:11px;color:var(--text3)">${s.turns} 轮 · in:${fmt(s.input)} out:${fmt(s.output)}</div>
-          <div class="model-bar-wrap"><div class="model-bar" style="width:${pct}%"></div></div>
-        </div>
-        <div class="model-nums">
-          <div class="model-cost">¥${s.cost.toFixed(4)}</div>
-        </div>
-      </div>`;
-  }).join('');
+  if (!stats||!Object.keys(stats).length) { el.innerHTML='<div class="empty">暂无数据</div>'; return; }
+  const entries = Object.entries(stats).sort((a,b)=>b[1].input-a[1].input);
+  const maxIn = Math.max(...entries.map(e=>e[1].input),1);
+  el.innerHTML = entries.map(([m,s])=>`
+    <div class="model-row">
+      <div class="model-badge" title="${m}">${m}</div>
+      <div class="model-info">
+        <div style="font-size:11px;color:var(--text3)">${s.turns}轮 · in:${fmt(s.input)} out:${fmt(s.output)}</div>
+        <div class="model-bar-wrap"><div class="model-bar" style="width:${Math.round(s.input/maxIn*100)}%"></div></div>
+      </div>
+      <div class="model-nums"><div class="model-cost">¥${s.cost.toFixed(4)}</div></div>
+    </div>`).join('');
 }
-
 function renderSessions(sessions) {
   const tbody = document.getElementById('session-tbody');
-  if (!sessions || sessions.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" class="empty">暂无会话数据</td></tr>';
-    return;
-  }
-  tbody.innerHTML = sessions.map(s => `
+  if (!sessions||!sessions.length) { tbody.innerHTML='<tr><td colspan="8" class="empty">暂无数据</td></tr>'; return; }
+  tbody.innerHTML = sessions.map(s=>`
     <tr>
-      <td><span class="session-id" title="${s.id}">${shortId(s.id)}</span></td>
+      <td><span class="session-id" title="${s.id}">${s.id.substring(0,8)}...</span></td>
       <td><span class="session-model" title="${s.model}">${s.model}</span></td>
       <td><span class="turns-badge">${s.turns}</span></td>
       <td><span class="tok">${fmt(s.input)}</span></td>
@@ -511,11 +330,125 @@ function renderSessions(sessions) {
       <td><span class="tok">${fmt(s.cache_read)}</span></td>
       <td><span class="cost-val">¥${s.cost.toFixed(4)}</span></td>
       <td><span class="time-str">${timeAgo(s.last)}</span></td>
-    </tr>
-  `).join('');
+    </tr>`).join('');
 }
 
-// 首次加载 + 每30s自动刷新
+// ── MCP 管理 ──────────────────────────────
+const MCP_ICONS = {
+  filesystem:'📁', puppeteer:'🌐', browser:'🌐', github:'🐙', git:'🔀',
+  sqlite:'🗄️', postgres:'🐘', mysql:'🐬', redis:'🔴', docker:'🐳',
+  slack:'💬', notion:'📝', jira:'🎯', linear:'📐', search:'🔍',
+  default:'🔌'
+};
+function mcpIcon(name) {
+  const k = Object.keys(MCP_ICONS).find(k=>name.toLowerCase().includes(k));
+  return MCP_ICONS[k]||MCP_ICONS.default;
+}
+
+const PRESETS = [
+  { name:'filesystem', cmd:'npx', args:'-y\n@modelcontextprotocol/server-filesystem\n/Users/yaoge', desc:'本地文件读写' },
+  { name:'puppeteer', cmd:'npx', args:'-y\n@modelcontextprotocol/server-puppeteer', desc:'浏览器自动化控制' },
+  { name:'github', cmd:'npx', args:'-y\n@modelcontextprotocol/server-github', env:'{"GITHUB_TOKEN":""}', desc:'GitHub 仓库操作' },
+  { name:'git', cmd:'npx', args:'-y\n@modelcontextprotocol/server-git\n--repository\n.', desc:'本地 Git 操作' },
+  { name:'sqlite', cmd:'npx', args:'-y\n@modelcontextprotocol/server-sqlite\n/path/to/db.sqlite', desc:'SQLite 数据库查询' },
+  { name:'brave-search', cmd:'npx', args:'-y\n@modelcontextprotocol/server-brave-search', env:'{"BRAVE_API_KEY":""}', desc:'Brave 搜索引擎' },
+  { name:'memory', cmd:'npx', args:'-y\n@modelcontextprotocol/server-memory', desc:'跨会话记忆存储' },
+  { name:'fetch', cmd:'npx', args:'-y\n@modelcontextprotocol/server-fetch', desc:'HTTP 请求工具' },
+];
+
+function renderPresets() {
+  document.getElementById('preset-grid').innerHTML = PRESETS.map(p=>`
+    <div class="preset-card" onclick="fillPreset(${JSON.stringify(p)})">
+      <div class="preset-name">${mcpIcon(p.name)} ${p.name}</div>
+      <div class="preset-desc">${p.desc}</div>
+    </div>`).join('');
+}
+
+function fillPreset(p) {
+  document.getElementById('f-name').value = p.name;
+  document.getElementById('f-cmd').value  = p.cmd;
+  document.getElementById('f-args').value = p.args;
+  document.getElementById('f-env').value  = p.env||'';
+}
+
+async function loadMcp() {
+  const el = document.getElementById('mcp-list');
+  try {
+    const r = await fetch('/api/mcp'), d = await r.json();
+    const servers = d.servers||[];
+    if (!servers.length) { el.innerHTML='<div class="empty">暂无已配置的 MCP Server，从下方预设中选择或手动添加</div>'; return; }
+    el.innerHTML = `<div class="mcp-grid">${servers.map(s=>`
+      <div class="mcp-card ${s.disabled?'is-disabled':''}" id="mcp-${s.name}">
+        <div class="mcp-icon">${mcpIcon(s.name)}</div>
+        <div class="mcp-info">
+          <div class="mcp-name">${s.name}
+            <span class="mcp-status ${s.disabled?'off':'on'}">${s.disabled?'已禁用':'运行中'}</span>
+          </div>
+          <div class="mcp-cmd">${s.command} ${(s.args||[]).join(' ')}</div>
+        </div>
+        <div class="mcp-actions">
+          <button class="btn btn-sm btn-toggle ${s.disabled?'disabled':''}"
+            onclick="toggleMcp('${s.name}',${!s.disabled})">
+            ${s.disabled?'启用':'禁用'}
+          </button>
+          <button class="btn btn-sm btn-danger" onclick="deleteMcp('${s.name}')">删除</button>
+        </div>
+      </div>`).join('')}</div>`;
+  } catch(e) { el.innerHTML=`<div class="empty">❌ 加载失败: ${e}</div>`; }
+}
+
+function showAlert(msg, type='success') {
+  const el = document.getElementById('mcp-alert');
+  el.textContent = msg;
+  el.className = `alert show alert-${type}`;
+  setTimeout(()=>el.classList.remove('show'), 3000);
+}
+
+async function addMcp() {
+  const name = document.getElementById('f-name').value.trim();
+  const cmd  = document.getElementById('f-cmd').value.trim();
+  const argsRaw = document.getElementById('f-args').value.trim();
+  const envRaw  = document.getElementById('f-env').value.trim();
+  if (!name||!cmd) { showAlert('名称和命令不能为空','error'); return; }
+  const args = argsRaw ? argsRaw.split('\n').map(s=>s.trim()).filter(Boolean) : [];
+  let env = null;
+  if (envRaw) { try { env=JSON.parse(envRaw); } catch { showAlert('环境变量 JSON 格式有误','error'); return; } }
+  try {
+    const r = await fetch('/api/mcp', {method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name,command:cmd,args,env})});
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error||r.statusText);
+    showAlert(`✅ ${d.message}`);
+    clearForm(); loadMcp();
+  } catch(e) { showAlert(`❌ ${e.message}`,'error'); }
+}
+
+async function deleteMcp(name) {
+  if (!confirm(`确定要删除 MCP Server "${name}" 吗？`)) return;
+  try {
+    const r = await fetch('/api/mcp/'+encodeURIComponent(name), {method:'DELETE'});
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error||r.statusText);
+    showAlert(`✅ ${d.message}`); loadMcp();
+  } catch(e) { showAlert(`❌ ${e.message}`,'error'); }
+}
+
+async function toggleMcp(name, disabled) {
+  try {
+    const r = await fetch('/api/mcp/'+encodeURIComponent(name)+'/toggle',
+      {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({disabled})});
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error||r.statusText);
+    showAlert(`✅ ${name} 已${disabled?'禁用':'启用'}`); loadMcp();
+  } catch(e) { showAlert(`❌ ${e.message}`,'error'); }
+}
+
+function clearForm() {
+  ['f-name','f-cmd','f-args','f-env'].forEach(id=>document.getElementById(id).value='');
+}
+
+// 初始化
+renderPresets();
 loadStats();
 setInterval(loadStats, 30000);
 </script>
